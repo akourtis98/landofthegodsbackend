@@ -1,10 +1,26 @@
-const http = require("http");
-const port = process.env.PORT || 3000;
-const server = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "text/html");
-  res.end("<h1>Hello World</h1>");
+const express = require("express");
+const bodyParser = require("body-parser");
+
+const app = express();
+
+app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: false
+  })
+);
+
+app.get("/url", function(req, res, next) {
+  res.json("test successful");
 });
-server.listen(port, () => {
-  console.log(`Server running at port ` + port);
+
+app.post("/url", (req, res, next) => {
+  res.json({
+    uname: req.body.uname,
+    pword: req.body.pword
+  });
+});
+
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
 });

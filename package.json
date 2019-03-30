@@ -1,5 +1,5 @@
 {
-  "name": "coolnodeapp",
+  "name": "landofthegods",
   "version": "1.0.0",
   "description": "node app ",
   "main": "app.js",
@@ -8,12 +8,16 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/akourtis98/landofthegodsbackend"
   },
-  "author": "",
+  "author": "akourtis98",
   "license": "ISC",
   "bugs": {
-    "url": ""
+    "url": "https://github.com/akourtis98/landofthegodsbackend"
   },
-  "homepage": ""
+  "homepage": "",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4"
+  }
 }
