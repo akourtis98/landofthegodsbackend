@@ -2,6 +2,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const jwt = require('jsonwebtoken');
 
+ObjectId = require('mongodb').ObjectID;
+
 const app = express();
 
 app.use(bodyParser.json());
@@ -13,7 +15,7 @@ app.use(
 
 // to connect to db
 const db = require("./db");
-const collection = "goals";
+// const collection = "goals";
 
 // just a test
 app.get("/url", function(req, res, next) {
@@ -41,17 +43,24 @@ const verifyToken = (req, res, next) => {
 
 };
 
+// delete goal by id route
+app.delete('/delete/goal/:id', verifyToken, (req, res) => {
+    jwt.verify(req.token, 'secretkey', (err, authData) => {
+        db.getDB().collection('goals').deleteOne({_id: ObjectId(req.params.id)});
+    });
+    if(!err){
+        res.json("successsful deletion");
+    }else{
+        res.json(err);
+    }
+});
+
+// login and give bearer token
 app.post('/login', (req,res) => {
-    db.getDB().collection('users').findOne({ uname: req.body.uname}, function(err, user) {
+    db.getDB().collection('users').findOne({ email: req.body.email}, function(err, user) {
         if(user===null){
             res.end("Login invalid");
-        }else if (user.uname === req.body.uname && user.pass === req.body.pass){
-            console.log("successful sign in");
-
-            const user = {
-                uname: req.body.uname,
-                pass: req.body.pass
-            };
+        }else if (user.email === req.body.email && user.pass === req.body.pass){
 
             jwt.sign({user}, 'secretkey', { expiresIn: '30s' }, (err, token) => {
                 res.json({
@@ -66,11 +75,18 @@ app.post('/login', (req,res) => {
 });
 
 // make a user account
-app.post("/signup", (req, res, next) => {
-    // Document to be inserted
-    const userInput = req.body;
+app.post("/add/user", (req, res, next) => {
+    const inp = req.body;
 
-    db.getDB().collection("users").insertOne(userInput,(err,result)=>{
+    const user = {
+        uname: inp.uname,
+        pass: inp.pass,
+        email: inp.email,
+        fname: inp.fname,
+        lname: inp.lname
+    };
+
+    db.getDB().collection("users").insertOne(user,(err,result)=>{
         if(err){
             const error = new Error("Failed");
             error.status = 400;
@@ -82,7 +98,7 @@ app.post("/signup", (req, res, next) => {
 });
 
 // update existing goal
-app.post("/updategoal:id", verifyToken, (req, res, next) => {
+app.post("/update/goal:id", verifyToken, (req, res, next) => {
     res.json({
         stars: req.body.stars,
         updateddesc: req.body.updateddesc
@@ -90,33 +106,28 @@ app.post("/updategoal:id", verifyToken, (req, res, next) => {
 });
 
 // make a new goal
-app.post('/makegoal', verifyToken, (req,res,next)=>{
+app.post('/add/goal', verifyToken, (req,res,next)=>{
     // Document to be inserted
-    const userInput = req.body;
+    const inp = req.body;
 
-    // use Joi to validate input
-    Joi.validate(userInput,schema,(err,result)=>{
+    const goal = {
+        title: inp.title,
+        desc: inp.desc
+    };
+
+    db.getDB().collection("goals").insertOne(goal,(err,result)=>{
         if(err){
-            const error = new Error("Invalid Input");
+            const error = new Error("Failed");
             error.status = 400;
             next(error);
         }
-        else{
-            db.getDB().collection("goals").insertOne(userInput,(err,result)=>{
-                if(err){
-                    const error = new Error("Failed to insert Todo Document");
-                    error.status = 400;
-                    next(error);
-                }
-                else
-                    res.json({result : result, document : result.ops[0],msg : "Successfully inserted Todo!!!",error : null});
-            });
-        }
+        else
+            res.json({msg : "Successful!!!",error : null});
     });
 });
 
 // to get all records from collection 'goals'
-app.get('/getgoals', verifyToken, (req, res) => {
+app.get('/get/goals', verifyToken, (req, res) => {
     jwt.verify(req.token, 'secretkey', (err, authData) => {
         if(err) {
             res.end(err);
@@ -132,6 +143,14 @@ app.get('/getgoals', verifyToken, (req, res) => {
         }
     });
 });
+
+const updateTime = () => {};
+
+const addRating = () => {};
+
+const updateUserProgress = () => {};
+
+const regX = () => {};
 
 db.connect((err)=>{
     // If err unable to connect to database
