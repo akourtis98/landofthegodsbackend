@@ -19,11 +19,6 @@ app.use(
 const db = require("./db");
 // const collection = "goals";
 
-// just a test
-app.get("/url", function(req, res, next) {
-    res.json("test successful");
-});
-
 // to verify Token
 const verifyToken = (req, res, next) => {
     // Get auth header value
@@ -48,7 +43,7 @@ const verifyToken = (req, res, next) => {
 // delete goal by id route
 app.delete('/delete/goal/:id', verifyToken, (req, res) => {
     jwt.verify(req.token, 'secretkey', (err, authData) => {
-        db.getDB().collection('goals').deleteOne({_id: ObjectId(req.params.id)});
+        db.getDB().collection('Goals').deleteOne({_id: ObjectId(req.params.id)});
     });
     if(!err){
         res.json("successsful deletion");
@@ -59,26 +54,23 @@ app.delete('/delete/goal/:id', verifyToken, (req, res) => {
 
 // login and give bearer token
 app.post('/login', (req,res) => {
-    db.getDB().collection('users').findOne({ email: req.body.email}, function(err, user) {
+    db.getDB().collection('Users').findOne({ email: req.body.email}, function(err, user) {
         if(user===null){
-            res.end("Login invalid");
+            res.json({error: "Login invalid"});
         }else if (user.email === req.body.email && user.pass === req.body.pass){
-
             jwt.sign({user}, 'secretkey', { expiresIn: '30s' }, (err, token) => {
-                res.json({
-                    token
-                });
+                res.json({token});
             });
         } else {
             console.log("Credentials wrong");
-            res.end("Login invalid");
+            res.json({error: "Login invalid"});
         }
     });
 });
 
 // make a user account
-app.post("/add/user", (req, res, next) => {
-    const inp = req.body;
+app.post("/add/user", (req, res) => {
+    const inp = req.body; 
 
     const user = {
         uname: inp.uname,
@@ -88,147 +80,76 @@ app.post("/add/user", (req, res, next) => {
         lname: inp.lname
     };
 
-    db.getDB().collection("users").insertOne(user,(err,result)=>{
+    db.getDB().collection("Users").insertOne(user,(err,result)=>{
         if(err){
-            const error = new Error("Failed");
-            error.status = 400;
-            next(error);
+            console.log("there is an error: + err");
         }
         else
-            res.json({msg : "Successful!!!",error : null});
-    });
-});
-
-// update existing goal
-app.post("/update/goal:id", verifyToken, (req, res, next) => {
-    res.json({
-        stars: req.body.stars,
-        updateddesc: req.body.updateddesc
+            res.json({msg : "Great!"});
     });
 });
 
 // make a new goal
-app.post('/add/goal', verifyToken, (req,res,next)=>{
+app.post('/update/goal', verifyToken, (req,res,next)=>{
     // Document to be inserted
     const inp = req.body;
 
     const goal = {
         title: inp.title,
         desc: inp.desc,
-        user_id: inp.user_id,
-        goal_id: inp.goal_id
+        user_id: inp.emai
     };
 
+    // check if it already exists to replace with new one, if it doesnt make new
+    // one:
     db.getDB().collection("Goals").insertOne(goal,(err,result)=>{
         if(err){
-            const error = new Error("Failed");
-            error.status = 400;
-            next(error);
+            console.log(err);
         }
         else
-            res.json({msg : "Successful!!!",error : null});
+            res.json({msg : "Successful!"});
     });
 });
 
 // to get all records from collection 'goals'
 app.get('/get/goals', verifyToken, (req, res) => {
-    jwt.verify(req.token, 'secretkey', (err, authData) => {
-        if(err) {
-            res.end(err);
-            res.sendStatus(403);
-        } else {
-            db.getDB().collection("goals").find({}).toArray((err,goals)=>{
+            db.getDB().collection("Goals").find({}).toArray((err, goals)=>{
                 if(err)
                     console.log(err);
                 else{
                     res.json(goals);
                 }
             });
-        }
-    });
 });
 
 
 // insert new row in daily progress
-app.post('/add/daily-progress', verifyToken, (req,res,next)=>{
+app.post('/update/progress', verifyToken, (req,res,next)=>{
     // Document to be inserted
     const inp = req.body;
 
-    const daily = {
+    const progress = {
         rating: inp.rating,
         desc: inp.desc,
         user_id: inp.user_id,
         goal_id: inp.goal_id,
-        day: getOnlyDayFromDateData()
+        type: req.type
+//      day: getOnlyDayFromDateData()
     };
 
-    db.getDB().collection("DailyProgress").insertOne(daily,(err,result)=>{
+    //check if daily already exists and if it does replace it, else:
+    db.getDB().collection("Progress").insertOne(progress,(err,result)=>{
         if(err){
-            const error = new Error("Failed");
-            error.status = 400;
-            next(error);
+            console.log(err);
         }
         else
             res.json({msg : "Successful!!!", error : null, inserted: daily});
     });
 });
 
-// insert new row in daily progress
-app.post('/add/general-progress', verifyToken, (req,res,next)=>{
-    // Document to be inserted
-    const inp = req.body;
-
-    const daily = {
-        rating: inp.rating,
-        title: inp.title,
-        user_id: inp.user_id,
-        goal_id: inp.goal_id,
-        day: getCurrentDayOfGoal()
-    };
-
-    db.getDB().collection("DailyProgress").insertOne(daily,(err,result)=>{
-        if(err){
-            const error = new Error("Failed");
-            error.status = 400;
-            next(error);
-        }
-        else
-            res.json({msg : "Successful!!!", error : null, inserted: daily});
-    });
-});
-
-// to edit desc and rating of work session
-const updateDailyProgress = () => {
-   //  find daily by user_id
-   //  make new object with new data
-   //  and replace old one with it
-   //  make a new goal
-   //  app.post('/add/daily-progress', verifyToken, (req,res,next)=>{
-   //      // Document to be inserted
-   //      const inp = req.body;
-
-   //      const daily = {
-   //          rating: inp.rating,
-   //          desc: inp.desc,
-   //          user_id: inp.user_id,
-   //          goal_id: inp.goal_id,
-   //          day: getOnlyDayFromDateData()
-   //      };
-
-   //      db.getDB().collection("DailyProgress").insertOne(daily,(err,result)=>{
-   //          if(err){
-   //              const error = new Error("Failed");
-   //              error.status = 400;
-   //              next(error);
-   //          }
-   //          else
-   //              res.json({msg : "Successful!!!", error : null, inserted: daily});
-   //      });
-   // });
-};
 
 // for when a day passes by
-const deleteDailyProgress = () => {
+const updateProgress = () => {
     // reset daily
     // for when user loses, their data gets reset
     // delete all records from general progress collection
@@ -236,38 +157,35 @@ const deleteDailyProgress = () => {
     app.get('/delete/daily-progress', verifyToken, (req, res) => {
         jwt.verify(req.token, 'secretkey', (err, authData) => {
             if(err) {
-                res.end(err);
-                res.sendStatus(403);
+                console.log(err);
             } else {
-                db.getDB().collection("DailyProgress").deleteMany({});
+                db.getDB().collection("Progress").deleteMany({});
             };
         });
     });
-
 };
 
 // for when user loses, their data gets reset
 // delete all records from general progress collection
 // get all records from general progress table
-app.get('/delete/general-progress', verifyToken, (req, res) => {
+app.get('/delete/progress', verifyToken, (req, res) => {
     jwt.verify(req.token, 'secretkey', (err, authData) => {
         if(err) {
-            res.end(err);
-            res.sendStatus(403);
+            console.log(err);
         } else {
-            db.getDB().collection("GeneralProgress").deleteMany({});
+            db.getDB().collection("Progress").deleteMany({});
         };
     });
 });
 
-// get all records from general progress table
-app.get('/get/general-progress', verifyToken, (req, res) => {
+// get all records from general progress table (later specify for user)
+app.get('/get/progress', verifyToken, (req, res) => {
     jwt.verify(req.token, 'secretkey', (err, authData) => {
         if(err) {
-            res.end(err);
-            res.sendStatus(403);
+            console.log(err);
+        res.sendStatus(403);
         } else {
-            db.getDB().collection("GeneralProgress").find({}).toArray((err,goal)=>{
+            db.getDB().collection("Progress").find({}).toArray((err,goal)=>{
                 if(err)
                     console.log(err);
                 else{
@@ -278,20 +196,12 @@ app.get('/get/general-progress', verifyToken, (req, res) => {
     });
 });
 
-const updateGeneralProgress = () => {
-    // take from daily progress and insert it to general and reset daily
-};
-
-const getDateData = () => {
+const getDate = () => {
     return new Date(year, month, day);
 };
 
-const getOnlyDayFromDateData = () => {
+const getDay = () => {
     return new Date(day);
-};
-
-const setCurrentDayOfGoal = () => {
-    day =+ 1;
 };
 
 // 24h counter
